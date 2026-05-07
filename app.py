@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 
 app = Flask(__name__)
 
@@ -21,11 +21,24 @@ def home():
         "message": "Habit Tracker API is running"
     }
 
-@app.route("/habits")
+@app.route("/habits", methods=["GET"])
 def get_habits():
     return {
         "habits": habits
     }
+
+@app.route("/habits", methods=["POST"])
+def create_habits():
+    data = request.get_json()
+
+    new_habit = {
+        "id": len(habits) + 1,
+        "name": data["name"],
+        "time": data["time"]
+    }
+
+    habits.append(new_habit)
+    return new_habit, 201
 
 if __name__ == "__main__":
     app.run(debug=True)
