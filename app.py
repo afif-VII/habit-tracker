@@ -40,5 +40,20 @@ def create_habits():
     habits.append(new_habit)
     return new_habit, 201
 
+@app.route("/habits/<int:habit_id>", methods=["DELETE"])
+def delete_habit(habit_id):
+    for habit in habits:
+        if habit["id"] == habit_id:
+            habits.remove(habit)
+
+            return {
+                "message": "Habit deleted",
+                "habit": habit 
+            }
+        
+    return {
+        "error": "Habit not found"
+    }, 404
+
 if __name__ == "__main__":
     app.run(debug=True)
