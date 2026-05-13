@@ -55,5 +55,24 @@ def delete_habit(habit_id):
         "error": "Habit not found"
     }, 404
 
+@app.route("/habits/<int:habit_id>", methods=["PUT"])
+def update_habit(habit_id):
+    data = request.get_json()
+
+    for habit in habits:
+        if habit["id"] == habit_id:
+
+            habit["name"] = data.get("name", habit["name"])
+            habit["time"] = data.get("time", habit["time"])
+
+            return {
+                "message": "Habit updated",
+                "habit": habit
+            }
+
+    return {
+        "error": "Habit not found"
+    }, 404
+
 if __name__ == "__main__":
     app.run(debug=True)
