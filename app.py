@@ -1,19 +1,28 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, request
+from flask_sqlalchemy import SQLAlchemy
+
+load_dotenv(".env")
 
 app = Flask(__name__)
 
-habits = [
-            {
-                "id": 1,
-                "name": "Reading",
-                "time": "1 hour a day",
-            },
-            {
-                "id": 2,
-                "name": "Gym",
-                "time": "1 hour a day",
-            }
-        ]
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+
+class Habit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    time = db.Column(db.String(100), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "time": self.time
+        }
 
 @app.route("/")
 def home():
@@ -23,56 +32,67 @@ def home():
 
 @app.route("/habits", methods=["GET"])
 def get_habits():
+    habits = Habit.query.all()
+    
     return {
-        "habits": habits
+        "habits": [habit.to_dict() for habit in habits]
     }
 
 @app.route("/habits", methods=["POST"])
-def create_habits():
+def create_habit():
     data = request.get_json()
 
-    new_habit = {
-        "id": len(habits) + 1,
-        "name": data["name"],
-        "time": data["time"]
-    }
+    new_habit = Habit(
+        name=data["name"],
+        time=data["time"]
+    )
 
-    habits.append(new_habit)
-    return new_habit, 201
+    db.session.add(new_habit)
+    db.session.commit()
+
+    return new_habit.to_dict(), 201
 
 @app.route("/habits/<int:habit_id>", methods=["DELETE"])
 def delete_habit(habit_id):
-    for habit in habits:
-        if habit["id"] == habit_id:
-            habits.remove(habit)
 
-            return {
-                "message": "Habit deleted",
-                "habit": habit 
-            }
-        
+    habit = Habit.query.get(habit_id)
+
+    if not habit:
+        return {
+            "error": "Habit not found"
+        }, 404
+
+    db.session.delete(habit)
+    db.session.commit()
+
     return {
-        "error": "Habit not found"
-    }, 404
+        "message": "Habit deleted",
+        "habit": habit.to_dict()
+    }
 
 @app.route("/habits/<int:habit_id>", methods=["PUT"])
 def update_habit(habit_id):
     data = request.get_json()
 
-    for habit in habits:
-        if habit["id"] == habit_id:
+    habit = Habit.query.get(habit_id)
 
-            habit["name"] = data.get("name", habit["name"])
-            habit["time"] = data.get("time", habit["time"])
+    if not habit:
+        return {
+            "error": "Habit not found"
+        }, 404
 
-            return {
-                "message": "Habit updated",
-                "habit": habit
-            }
+    habit.name = data.get("name", habit.name)
+    habit.time = data.get("time", habit.time)
+
+    db.session.commit()
 
     return {
-        "error": "Habit not found"
-    }, 404
+        "message": "Habit updated",
+        "habit": habit.to_dict()
+    }
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == "__main__":
     app.run(debug=True)
