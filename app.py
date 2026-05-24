@@ -18,12 +18,14 @@ class Habit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     time = db.Column(db.String(100), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
 
     def to_dict(self):
         return {
             "id": self.id,
             "name": self.name,
-            "time": self.time
+            "time": self.time,
+            "completed": self.completed
         }
 
 @app.route("/")
@@ -82,9 +84,10 @@ def update_habit(habit_id):
         return {
             "error": "Habit not found"
         }, 404
-
+    
     habit.name = data.get("name", habit.name)
     habit.time = data.get("time", habit.time)
+    habit.completed = data.get("completed", habit.completed)
 
     db.session.commit()
 
