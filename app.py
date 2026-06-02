@@ -74,25 +74,21 @@ def delete_habit(habit_id):
         "habit": habit.to_dict()
     }
 
-@app.route("/habits/<int:habit_id>", methods=["PUT"])
-def update_habit(habit_id):
-    data = request.get_json()
-
+@app.route("/habits/<int:habit_id>/complete", methods=["PUT"])
+def complete_habit(habit_id):
     habit = Habit.query.get(habit_id)
 
     if not habit:
         return {
             "error": "Habit not found"
         }, 404
-    
-    habit.name = data.get("name", habit.name)
-    habit.time = data.get("time", habit.time)
-    habit.completed = data.get("completed", habit.completed)
+
+    habit.completed = True
 
     db.session.commit()
 
     return {
-        "message": "Habit updated",
+        "message": "Habit marked as completed",
         "habit": habit.to_dict()
     }
 
